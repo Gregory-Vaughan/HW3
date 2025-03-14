@@ -156,16 +156,46 @@ class CardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: card.isMatched ? null : onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.blue,
-          image: DecorationImage(
-            image: AssetImage(card.isFaceUp ? card.image : 'assets/card_back.png'),
-            fit: BoxFit.cover,
+      child: AnimatedSwitcher(
+        duration: Duration(milliseconds: 500),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return RotationYTransition(turns: animation, child: child);
+        },
+        child: Container(
+          key: ValueKey<bool>(card.isFaceUp),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.blue,
+            image: DecorationImage(
+              image: AssetImage(card.isFaceUp ? card.image : 'assets/card_back.png'),
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class RotationYTransition extends StatelessWidget {
+  final Widget child;
+  final Animation<double> turns;
+
+  const RotationYTransition({required this.child, required this.turns});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: turns,
+      child: child,
+      builder: (context, child) {
+        final angle = turns.value * 3.1415927;
+        return Transform(
+          transform: Matrix4.rotationY(angle),
+          alignment: Alignment.center,
+          child: child,
+        );
+      },
     );
   }
 }
