@@ -14,14 +14,89 @@ class CardMatchingGame extends StatelessWidget {
   }
 }
 
+
+class CardModel {
+  final String image;
+  bool isFaceUp;
+  bool isMatched;
+
+  CardModel({required this.image, this.isFaceUp = false, this.isMatched = false});
+}
+
+
+List<CardModel> generateCards() {
+  List<String> images = [
+    'assets/Jack.png', 'assets/8.png', 'assets/10.png', 'assets/Queen.png',
+    'assets/Joker.png', 'assets/9.png', 'assets/King.png', 'assets/Ace.png',
+  ];
+
+  List<CardModel> cards = images.expand((image) => [CardModel(image: image), CardModel(image: image)]).toList();
+  cards.shuffle();
+
+  return cards;
+}
+
+
 class GameScreen extends StatefulWidget {
   @override
   _GameScreenState createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
- 
-  List<String> cards = List.generate(16, (index) => 'assets/card_back.png'); 
+  late List<CardModel> cards;
+
+  @override
+  void initState() {
+    super.initState();
+    cards = generateCards();
+  }
+
+  
+  void onCardTap(int index) {
+    setState(() {
+      if (!cards[index].isFaceUp && !cards[index].isMatched) {
+        cards[index].isFaceUp = true;
+      }
+    });
+
+    checkMatch();
+  }
+
+  
+  void checkMatch() {
+    List<int> flippedIndexes = [];
+
+    for (int i = 0; i < cards.length; i++) {
+      if (cards[i].isFaceUp && !cards[i].isMatched) {
+        flippedIndexes.add(i);
+      }
+    }
+
+    if (flippedIndexes.length == 2) {
+      if (cards[flippedIndexes[0]].image == cards[flippedIndexes[1]].image) {
+        
+        setState(() {
+          cards[flippedIndexes[0]].isMatched = true;
+          cards[flippedIndexes[1]].isMatched = true;
+        });
+      } else {
+        
+        Future.delayed(Duration(milliseconds: 800), () {
+          setState(() {
+            cards[flippedIndexes[0]].isFaceUp = false;
+            cards[flippedIndexes[1]].isFaceUp = false;
+          });
+        });
+      }
+    }
+  }
+
+  
+  void resetGame() {
+    setState(() {
+      cards = generateCards();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +106,7 @@ class _GameScreenState extends State<GameScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: () {
-              
-              setState(() {});
-            },
+            onPressed: resetGame, 
           ),
         ],
       ),
@@ -52,7 +124,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
 
-        
+          // Card Grid
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -64,7 +136,10 @@ class _GameScreenState extends State<GameScreen> {
                 ),
                 itemCount: cards.length,
                 itemBuilder: (context, index) {
-                  return CardWidget(imagePath: cards[index]);
+                  return CardWidget(
+                    card: cards[index],
+                    onTap: () => onCardTap(index),
+                  );
                 },
               ),
             ),
@@ -77,22 +152,21 @@ class _GameScreenState extends State<GameScreen> {
 
 
 class CardWidget extends StatelessWidget {
-  final String imagePath;
+  final CardModel card;
+  final VoidCallback onTap;
 
-  const CardWidget({Key? key, required this.imagePath}) : super(key: key);
+  const CardWidget({Key? key, required this.card, required this.onTap}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        
-      },
+      onTap: card.isMatched ? null : onTap,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: Colors.blue,
           image: DecorationImage(
-            image: AssetImage(imagePath),
+            image: AssetImage(card.isFaceUp ? card.image : 'assets/card_back.png'),
             fit: BoxFit.cover,
           ),
         ),
